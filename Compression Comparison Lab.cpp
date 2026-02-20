@@ -11,6 +11,7 @@ std::string readTextFile (std::string filename)
 {
     std::ifstream file (filename);
     std::string text, line;
+    bool firstLine = true;
 
     if (!file)
     {
@@ -18,12 +19,15 @@ std::string readTextFile (std::string filename)
         return "";
     }
 
-    while (getline (file,line))
+   while (getline (file, line))
     {
-        // to prevent new lines in the file from getting lost
-        text+= line+ '\n';
+        if (!firstLine) {
+            text += '\n'; // to only add a newline if there was a line before this one
+        }
+        text += line;
+        firstLine = false;
     }
-
+    
     file.close ();
     return text;
 }
@@ -186,8 +190,8 @@ void getUserInput ()
     std::string filename;
     int choice;
 
-    std::cout << "1. Compress Text File.\n";
-    std::cout << "2.Compress file with numerical values.\n\n";
+    std::cout << "1.Compress a Text File.\n";
+    std::cout << "2.Compress a Numeric File.\n\n";
     std::cout << "Enter choice: \n";
     std::cin >> choice;
 
@@ -198,8 +202,29 @@ void getUserInput ()
         return;
     }
 
-    std::cout << "\nEnter file.\n";
-    std::cin >> filename;
+     bool fileOpened = false;
+    std::string text;
+    std::vector<int> logData;
+
+    // a loop to keep asking until the file is valid
+    do {
+        std::cout << "\nEnter file name: \n";
+        std::cin >> filename;
+
+        if (choice == 1) {
+            text = readTextFile(filename);
+            if (!text.empty()) fileOpened = true;
+        } else {
+            logData = readLogFile(filename);
+            if (!logData.empty()) fileOpened = true;
+        }
+
+        // If fileOpened is still false,read function prints "Error"
+        if (!fileOpened) {
+            std::cout << "Please check the spelling and ensure the file is in the correct folder.\n";
+        }
+
+    } while (!fileOpened);
 
 
     if (choice ==  1)
@@ -209,7 +234,7 @@ void getUserInput ()
      int originalSize = text.length();;
      std::vector <int> asciiResults = AsciiValues (text);
      std::vector <int> deltaEncodedResults = deltaEncode (asciiResults);
-     std::cout << "      DELTA ENCODING RESULTS    \n";
+     std::cout << "\n      DELTA ENCODING RESULTS    \n";
      DisplayDelta (deltaEncodedResults);
 
      std::vector <std::pair <int, int>> rleResults = rleCompression (deltaEncodedResults);
@@ -256,6 +281,7 @@ int main ()
 
     return 0;
 }
+
 
 
 
