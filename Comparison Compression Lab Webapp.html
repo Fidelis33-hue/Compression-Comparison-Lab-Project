@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RLE + DELTA ENCODING</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f7fa;
+      color: #0a2540;
+    }
+    header {
+      background-color: #0a2540;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+    }
+    main {
+      max-width: 1000px;
+      margin: auto;
+      padding: 30px;
+    }
+    .card {
+      background-color: #ffffff;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 18px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-compress {
+      background-color: #0a2540;
+      color: white;
+      margin-right: 10px;
+    }
+    .btn-clear {
+      background-color: #cccccc;
+      color: #0a2540;
+    }
+    pre {
+      background-color: #eef2f7;
+      padding: 15px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
+    select, input {
+      padding: 6px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>RLE + DELTA ENCODING</h1>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Input</h2>
+    <label>File Type:</label>
+    <select id="fileType">
+      <option value="text">Text File</option>
+      <option value="numeric">Numeric File</option>
+    </select>
+    <br><br>
+    <input type="file" id="fileInput">
+    <br><br>
+    <button class="btn-compress" onclick="compressFile()">Compress</button>
+    <button class="btn-clear" onclick="clearData()">Clear Data</button>
+  </div>
+
+  <div class="card">
+    <h2>Sizes & Compression Ratio</h2>
+    <p><strong>Original Size:</strong> <span id="originalSize">--</span></p>
+    <p><strong>Compressed Size:</strong> <span id="compressedSize">--</span></p>
+    <p><strong>Compression Ratio:</strong> <span id="ratio">--</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Delta Encoding Output</h3>
+    <pre id="deltaOutput">--</pre>
+  </div>
+
+  <div class="card">
+    <h3>Run-Length Encoding Output</h3>
+    <pre id="rleOutput">--</pre>
+  </div>
+
+</main>
+
+<script>
+function compressFile() {
+  const fileInput = document.getElementById("fileInput");
+  const fileType = document.getElementById("fileType").value;
+
+  if (fileInput.files.length === 0) {
+    alert("Please select a file first.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    let data = e.target.result;
+    let values = [];
+
+    if (fileType === "text") {
+      for (let i = 0; i < data.length; i++) {
+        values.push(data.charCodeAt(i));
+      }
+    } else {
+      values = data.trim().split(/\s+/).map(Number);
+    }
+
+    const originalSize = values.length;
+
+    // Delta encoding
+    let delta = [];
+    if (values.length > 0) {
+      delta.push(values[0]);
+      for (let i = 1; i < values.length; i++) {
+        delta.push(values[i] - values[i - 1]);
+      }
+    }
+
+    // RLE
+    let rle = [];
+    if (delta.length > 0) {
+      let current = delta[0];
+      let count = 1;
+
+      for (let i = 1; i < delta.length; i++) {
+        if (delta[i] === current) {
+          count++;
+        } else {
+          rle.push([current, count]);
+          current = delta[i];
+          count = 1;
+        }
+      }
+      rle.push([current, count]);
+    }
+
+    const compressedSize = rle.length * 2;
+    const ratio = compressedSize === 0 ? 0 : (originalSize / compressedSize).toFixed(2);
+
+    document.getElementById("originalSize").textContent = originalSize;
+    document.getElementById("compressedSize").textContent = compressedSize;
+    document.getElementById("ratio").textContent = ratio;
+    document.getElementById("deltaOutput").textContent = delta.join(" ");
+    document.getElementById("rleOutput").textContent = rle.map(p => `(${p[0]},${p[1]})`).join(" ");
+  };
+
+  reader.readAsText(fileInput.files[0]);
+}
+
+function clearData() {
+  document.getElementById("fileInput").value = "";
+  document.getElementById("originalSize").textContent = "--";
+  document.getElementById("compressedSize").textContent = "--";
+  document.getElementById("ratio").textContent = "--";
+  document.getElementById("deltaOutput").textContent = "--";
+  document.getElementById("rleOutput").textContent = "--";
+}
+</script>
+
+</body>
+</html>
